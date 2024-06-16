@@ -1,0 +1,42 @@
+---
+- name: Backup PostgreSQL database
+  hosts: db
+  become: true
+  gather_facts: false
+  vars:
+    db_host: 10.0.2.4
+    db_user: postgres
+    db_password: postgres
+    db_name: postgres
+    backup_file: /ansible/backup_{{ db_name }}.sql
+
+  tasks:
+    - name: Install PostgreSQL client
+      apt:
+        name: postgresql-client-13
+        state: present
+      become: true
+
+    - name: Perform PostgreSQL backup
+      shell: pg_dump -h {{ db_host }} -U {{ db_user }} {{ db_name }} > {{ backup_file }}
+      environment:
+        PGPASSWORD: "{{ db_password }}"
+      args:
+        executable: /bin/bash
+      register: pg_dump_result
+      ignore_errors: true
+
+    - name: Check if pg_dump was successful
+      fail:
+        msg: "pg_dump failed with error: {{ pg_dump_result.stderr }}"
+      when: pg_dump_result.rc != 0
+
+    - name: Verify backup file
+      stat:
+        path: "{{ backup_file }}"
+      register: backup_stat
+
+    - name: Print backup file path
+      debug:
+        msg: "Backup file created at {{ backup_file }}"
+      when: backup_stat.stat.exists

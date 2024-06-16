@@ -1,15 +1,15 @@
 # backend/models.py
-import sqlite3
+import psycopg2
 import os
 
-DATABASE_PATH = '/var/lib/sqlite3/database.db'
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 def create_table():
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             nome TEXT NOT NULL,
             email TEXT NOT NULL,
             funcao TEXT NOT NULL
@@ -19,14 +19,14 @@ def create_table():
     conn.close()
 
 def add_user(nome, email, funcao):
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO usuarios (nome, email, funcao) VALUES (?, ?, ?)', (nome, email, funcao))
+    cursor.execute('INSERT INTO usuarios (nome, email, funcao) VALUES (%s, %s, %s)', (nome, email, funcao))
     conn.commit()
     conn.close()
 
 def get_users():
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM usuarios')
     users = cursor.fetchall()

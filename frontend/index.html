@@ -1,4 +1,3 @@
-<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,75 +9,65 @@
 <body>
     <h1>Cadastro de Usuários</h1>
     <form id="userForm">
-        <label for="nome">Nome:</label>
-        <input type="text" id="nome" name="nome" required><br>
-        
+        <label for="name">Nome:</label>
+        <input type="text" id="name" name="name" required><br>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required><br>
-        
-        <label for="funcao">Função:</label>
-        <input type="text" id="funcao" name="funcao" required><br>
-        
+        <label for="role">Função de Trabalho:</label>
+        <input type="text" id="role" name="role" required><br>
         <button type="submit">Cadastrar</button>
     </form>
-    
     <h2>Usuários Cadastrados</h2>
     <table id="usersTable">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Nome</th>
                 <th>Email</th>
                 <th>Função</th>
             </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+            <!-- Os dados dos usuários irão aparecer aqui -->
+        </tbody>
     </table>
-    
+
     <script>
-        document.getElementById('userForm').addEventListener('submit', async function(event) {
+        document.getElementById('userForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            
-            const nome = document.getElementById('nome').value;
-            const email = document.getElementById('email').value;
-            const funcao = document.getElementById('funcao').value;
-            
-            const response = await fetch('/api/users', {
+            const formData = new FormData(this);
+            fetch('http://localhost:5000/users', {
                 method: 'POST',
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    role: formData.get('role')
+                }),
                 headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ nome, email, funcao }),
-            });
-            
-            if (response.ok) {
-                alert('Usuário cadastrado com sucesso!');
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+            .then(data => {
                 loadUsers();
-            } else {
-                alert('Erro ao cadastrar usuário.');
-            }
-        });
-        
-        async function loadUsers() {
-            const response = await fetch('/api/users');
-            const users = await response.json();
-            
-            const usersTableBody = document.querySelector('#usersTable tbody');
-            usersTableBody.innerHTML = '';
-            
-            users.forEach(user => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${user[0]}</td>
-                    <td>${user[1]}</td>
-                    <td>${user[2]}</td>
-                    <td>${user[3]}</td>
-                `;
-                usersTableBody.appendChild(row);
+                this.reset();
             });
+        });
+
+        function loadUsers() {
+            fetch('http://localhost:5000/users')
+                .then(response => response.json())
+                .then(data => {
+                    const usersTable = document.getElementById('usersTable').getElementsByTagName('tbody')[0];
+                    usersTable.innerHTML = '';
+                    data.forEach(user => {
+                        const row = usersTable.insertRow();
+                        row.insertCell(0).innerText = user.name;
+                        row.insertCell(1).innerText = user.email;
+                        row.insertCell(2).innerText = user.role;
+                    });
+                });
         }
-        
-        loadUsers();
+
+        window.onload = loadUsers;
     </script>
 </body>
 </html>

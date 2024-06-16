@@ -1,0 +1,4 @@
+Flask==2.1.1
+psycopg2-binary==2.9.3
+Werkzeug==2.0.3  # Certifique-se de usar uma versão compatível
+Flask-CORS==3.0.10
