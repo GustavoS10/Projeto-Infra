@@ -1,0 +1,31 @@
+---
+- hosts: servidores_docker
+  become: true
+  vars:
+    nginx_log_path: /var/log/nginx/access.log
+    request_threshold: 2  # Limite de requisições
+    container_name_prefix: "nginx_instance_"
+    image_name: "nginx:latest"
+
+  tasks:
+    - name: Contar o número de requisições no de log do NGINX
+      command: "wc -l {{ nginx_log_path }}"
+      register: request_count
+
+    - name: Debug request count
+      debug:
+        msg: "Número de requisições: {{ request_count.stdout }}"
+
+    - name: Subir outro contêiner NGINX se o número de requisições exceder o limite
+      docker_container:
+        name: "{{ container_name_prefix }}{{ item }}"
+        image: "{{ image_name }}"
+        state: started
+        ports:
+          - "80:80"
+      loop: "{{ range(1, (request_count.stdout | int) // request_threshold) | list }}"
+      when: request_count.stdout | int > request_threshold
+
+    - name: Reiniciar o arquivo de log do NGINX
+      command: "echo '' > {{ nginx_log_path }}"
+      when: request_count.stdout | int > request_threshold
