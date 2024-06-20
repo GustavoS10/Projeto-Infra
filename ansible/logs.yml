@@ -1,0 +1,35 @@
+---
+- name: Verificar logs dos contêineres e salvar em arquivos
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Obter lista de contêineres em execução
+      command: docker ps --format '{{"{{"}}.Names{{"}}"}}'
+      register: container_list
+
+    - name: Mostrar lista de contêineres
+      debug:
+        var: container_list.stdout_lines
+
+    - name: Criar diretório para logs na máquina local
+      local_action:
+        module: file
+        path: ./logs
+        state: directory
+        mode: '0755'
+
+    - name: Coletar logs dos contêineres e salvar em arquivos na máquina local
+      shell: "docker logs {{ item }} > ./logs/{{ item }}.log"
+      with_items: "{{ container_list.stdout_lines }}"
+      when: container_list.stdout_lines | length > 0
+      ignore_errors: yes
+
+    - name: Mostrar arquivos de logs criados na máquina local
+      local_action:
+        module: command
+        cmd: ls -l ./logs/
+      register: log_files
+
+    - name: Exibir arquivos de logs
+      debug:
+        var: log_files.stdout_lines
